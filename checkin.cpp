@@ -19,6 +19,7 @@ int main(int ac, char **av)
 	}
 
 
+
 	// Load the file system
 	initFS("part.dsk",av[2]);
 
@@ -35,7 +36,10 @@ int main(int ac, char **av)
 
 	//write file
 
+
 	int fp2 = openFile(av[1],MODE_NORMAL);
+
+
 
 	if(fp2==-1){
 		//file does not exit
@@ -54,8 +58,8 @@ int main(int ac, char **av)
 			//write to the newly created file
 			writeFile(fp2,buffer,sizeof(char),len);
 			//close the file
+			closeFile(fp2);
 			closeFS();
-
 			free(buffer);
 			return 0;
 		}

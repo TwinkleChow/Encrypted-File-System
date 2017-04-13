@@ -8,7 +8,7 @@ TFileSystemStruct *_fs;
 // Open File Table
 TOpenFile* _oft[max_no];
 
-int oft_available[max_no] = { 0 };
+int oft_available[max_no] = {0};
 
 // Open file table counter
 int _oftCount = 0;
@@ -18,6 +18,7 @@ int _oftCount = 0;
 void initFS(const char *fsPartitionName, const char *fsPassword) {
 
 	mountFS(fsPartitionName, fsPassword);
+	_fs = getFSInfo();
 }
 
 // Opens a file in the partition. Depending on mode, a new file may be created
@@ -31,7 +32,9 @@ int openFile(const char *filename, unsigned char mode) {
 		unsigned long result = findFile(filename);
 
 
+
 		if (result != FS_FILE_NOT_FOUND) {
+
 
 			//the file exists
 			//result stores the directory index
@@ -40,19 +43,24 @@ int openFile(const char *filename, unsigned char mode) {
 			for (int i = 0; i < max_no; i++) {
 				if (oft_available[i] == 0) {
 					index_to_add = i;
+					break;
 				}
 
 			}
+
 			if (index_to_add == -1) {
 				printf("error!The oft is full");
 				return -1;
 			} else {
 
 				_oft[index_to_add] = new TOpenFile;
+				_oft[index_to_add]->fileName = (char*)filename;
 				_oft[index_to_add]->openMode = mode;
 				_oft[index_to_add]->blockSize = _fs->blockSize;
 				_oft[index_to_add]->inode = result;
 				_oft[index_to_add]->inodeBuffer = makeInodeBuffer();
+
+
 				//load inode
 				loadInode(_oft[index_to_add]->inodeBuffer, result);
 
@@ -68,13 +76,14 @@ int openFile(const char *filename, unsigned char mode) {
 					_oft[index_to_add]->readPtr = 0;
 					_oft[index_to_add]->filePtr = 0;
 				}
-				//make this entry as used
+				//mark this entry as used
 				oft_available[index_to_add] = 1;
 				_oftCount++;
 
 				return (index_to_add);
 
 			}
+
 		}
 
 		else {
@@ -90,8 +99,6 @@ int openFile(const char *filename, unsigned char mode) {
 
 				unsigned int index = makeDirectoryEntry(filename, 0x0, 0);	//?
 
-
-
 				if (index != FS_DIR_FULL) {
 
 					//allocate memory
@@ -103,9 +110,6 @@ int openFile(const char *filename, unsigned char mode) {
 
 					// Create the inode buffer
 					unsigned long *inode = makeInodeBuffer();
-
-					// Load the
-					loadInode(inode, index);
 
 					// Set the first entry of the inode to the free block
 					inode[0]=freeBlock;
@@ -125,6 +129,7 @@ int openFile(const char *filename, unsigned char mode) {
 					for (int i = 0; i < max_no; i++) {
 						if (oft_available[i] == 0) {
 							index_to_add = i;
+							break;
 						}
 
 					}
@@ -135,6 +140,7 @@ int openFile(const char *filename, unsigned char mode) {
 
 					else {
 						_oft[index_to_add] = new TOpenFile;
+						_oft[index_to_add]->fileName = (char*)filename;
 						_oft[index_to_add]->openMode = mode;
 						_oft[index_to_add]->blockSize = _fs->blockSize;
 						_oft[index_to_add]->inode = index;
@@ -185,9 +191,12 @@ void writeFile(int fp, void *buffer, unsigned int dataSize,
 			if (_oft[fp]->writePtr < _oft[fp]->blockSize) {
 				//write to the buffer
 //				_oft[fp]->buffer[_oft[fp]->writePtr] = buffer[i];
-				memcpy(_oft[fp]->buffer + _oft[fp]->writePtr, buffer + i, 1);
+				strncpy(_oft[fp]->buffer + _oft[fp]->writePtr, (char*)(buffer + i), 1);
 				_oft[fp]->writePtr++;
 				_oft[fp]->filePtr++;
+//				printf("buffer + i =%s\n",(char*)(buffer + i));
+//				printf("databuffer %s\n",_oft[fp]->buffer + _oft[fp]->writePtr-1);
+				fflush(stdout);
 
 			} else {
 				//writePtr == blockSize
@@ -218,11 +227,15 @@ void writeFile(int fp, void *buffer, unsigned int dataSize,
 				saveInode(_oft[fp]->inodeBuffer,_oft[fp]->inode);
 				_oft[fp]->writePtr = 0;
 				updateDirectory();
+				updateDirectoryFileLength(_oft[fp]->fileName,_oft[fp]->filePtr);
+
+
 
 			}
 
 		}
 
+//		printf("final: %s",_oft[fp]->buffer);
 	} else {
 		//mode ==MODE_READ_ONLY
 		printf("MODE_READ_ONLY,does nothing");
@@ -257,13 +270,15 @@ void flushFile(int fp) {
 			}
 		}
 		//write data to the disk
+//		printf("flush: %s",_oft[fp]->buffer);
+		fflush(stdout);
 
 		writeBlock(_oft[fp]->buffer, blockNum);
 		_oft[fp]->writePtr = 0;
 
 		//update directory and length of the file(?)
 		updateDirectory();
-//		updateDirectoryFileLength(_oft[fp]->fileName,_oft[fp]->filePtr);
+		updateDirectoryFileLength(_oft[fp]->fileName,_oft[fp]->filePtr);
 		saveInode(_oft[fp]->inodeBuffer, _oft[fp]->inode);
 	}
 
@@ -272,13 +287,29 @@ void flushFile(int fp) {
 // Read data from the file.
 void readFile(int fp, void *buffer, unsigned int dataSize,
 		unsigned int dataCount) {
-	buffer = (char*) malloc(dataSize * dataCount);
+
+	if(!_oft[fp]->filePtr){
+		unsigned long blockNum = returnBlockNumFromInode(
+				_oft[fp]->inodeBuffer, _oft[fp]->filePtr);
+
+		if (blockNum) {
+			readBlock(_oft[fp]->buffer, blockNum);
+
+		} else {
+
+			printf("End of the file");
+		}
+
+	}
 
 	for (int i = 0; i < dataSize * dataCount; i++) {
 		if (_oft[fp]->readPtr < _oft[fp]->blockSize) {
 			//read to the buffer
 //			 buffer[i]=_oft[fp]->buffer[_oft[fp]->filePtr];
-			memcpy(buffer + i, _oft[fp]->buffer + _oft[fp]->filePtr, 1);
+//			memcpy(buffer + i, , 1);
+
+			strncpy((char*)(buffer + i), _oft[fp]->buffer + _oft[fp]->filePtr, 1);
+
 			_oft[fp]->readPtr++;
 			_oft[fp]->filePtr++;
 
