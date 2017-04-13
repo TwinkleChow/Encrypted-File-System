@@ -24,6 +24,8 @@ typedef struct oft
   unsigned int filePtr; // File pointer. Points relative to ALL data in a file, not just the current buffer
 } TOpenFile;
 
+
+
 // Mounts a paritition given in fsPartitionName. Must be called before all
 // other functions
 void initFS(const char *fsPartitionName, const char *fsPassword);
