@@ -344,6 +344,7 @@ void delFile(const char *filename) {
 
 		if (!bit) {
 			delDirectoryEntry(filename);
+
 		}
 	}
 

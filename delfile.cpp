@@ -4,14 +4,26 @@ int main(int ac, char **av)
 {
 	if(ac != 2)
 	{
-		printf("\nUsage: %s <file to delete>\n\n", av[0]);
+		printf("\nUsage: %s <file to delete>\n\n", av[1]);
 		exit(-1);
 	}
 
-	printf("%s",av[1]);
-	fflush(stdout);
+	  initFS("part.dsk", "");
 
+	  unsigned int ndx = findFile(av[1]);
 
+	  if(ndx != FS_FILE_NOT_FOUND)
+	  {
+		  delFile(av[1]);
+	  }
+	  else{
+		  printf("FILE NOT FOUND");
+		  fflush(stdout);
+		  return ndx;
+
+	  }
+
+	  closeFS();
 
 
 	return 0;
