@@ -365,6 +365,7 @@ void closeFile(int fp) {
 
 	//delete the entry in the open file table
 	oft_available[fp]=0;
+	delete _oft[fp];
 
 }
 
