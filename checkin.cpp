@@ -49,7 +49,7 @@ int main(int ac, char **av)
 
 		if(fp2==-1){
 			//not enough space in disk
-			printf("Not enough space in disk");
+			printf("Not enough space in disk\n");
 			exit(-1);
 
 		}
@@ -67,7 +67,7 @@ int main(int ac, char **av)
 	}
 	else{
 		//file already exist
-		printf("DUPLICATE FILE ERROR");
+		printf("DUPLICATE FILE ERROR\n");
 		exit(-1);
 
 	}

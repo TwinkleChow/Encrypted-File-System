@@ -17,7 +17,7 @@ int main(int ac, char **av)
 		  delFile(av[1]);
 	  }
 	  else{
-		  printf("FILE NOT FOUND");
+		  printf("FILE NOT FOUND\n");
 		  fflush(stdout);
 		  return ndx;
 

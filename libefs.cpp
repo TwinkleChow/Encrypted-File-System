@@ -346,6 +346,10 @@ void delFile(const char *filename) {
 			delDirectoryEntry(filename);
 
 		}
+		else{
+			printf("CANNOT DELETE READ ONLY FILE\n");
+			fflush(stdout);
+		}
 	}
 
 }
